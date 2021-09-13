@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Task = require('../models/task');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -48,6 +49,22 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
+userSchema.methods.generateAuthToken = async function () {
+  const user = this;
+  const token = jwt.sign({ _id: user._id.toString() }, 'thisIsTheSignature');
+  user.tokens = user.tokens.concat({ token });
+  await user.save();
+  return token;
+};
+
+userSchema.methods.toJSON = function () {
+  const user = this;
+  const userObject = user.toObject();
+  delete userObject.password;
+  delete userObject.tokens;
+  return userObject;
+};
+
 userSchema.pre('save', async function (next) {
   const user = this;
 
@@ -55,6 +72,18 @@ userSchema.pre('save', async function (next) {
     user.password = await bcrypt.hash(user.password, 8);
 
   next();
+});
+
+userSchema.pre('remove', async function (next) {
+  const user = this;
+  await Task.deleteMany({ owner: user._id });
+  next();
+});
+
+userSchema.virtual('tasks', {
+  ref: 'Task',
+  localField: '_id',
+  foreignField: 'owner',
 });
 
 userSchema.statics.findByCredentials = async (email, password) => {
@@ -67,14 +96,6 @@ userSchema.statics.findByCredentials = async (email, password) => {
   if (!isMatch) throw new Error('Unable to login');
 
   return user;
-};
-
-userSchema.methods.generateAuthToken = async function () {
-  const user = this;
-  const token = jwt.sign({ _id: user._id.toString() }, 'thisIsTheSignature');
-  user.tokens = user.tokens.concat({ token });
-  await user.save();
-  return token;
 };
 
 const User = mongoose.model('User', userSchema);
