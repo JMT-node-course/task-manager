@@ -4,50 +4,55 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Task = require('../models/task');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    require: true,
-    unique: true,
-    trim: true,
-    lowercase: true,
-    validate(value) {
-      if (!validator.isEmail(value)) {
-        throw new Error('Invalid email');
-      }
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-  },
-  age: {
-    type: Number,
-    default: 0,
-    validate(value) {
-      if (value < 0) throw new Error('Age must be a positive number');
-    },
-  },
-  password: {
-    type: String,
-    require: true,
-    trim: true,
-    minlength: 7,
-    validate(value) {
-      if (value.toLowerCase().includes('password'))
-        throw new Error('Password can not contain "password"');
-    },
-  },
-  tokens: [
-    {
-      token: {
-        type: String,
-        required: true,
+    email: {
+      type: String,
+      require: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      validate(value) {
+        if (!validator.isEmail(value)) {
+          throw new Error('Invalid email');
+        }
       },
     },
-  ],
-});
+    age: {
+      type: Number,
+      default: 0,
+      validate(value) {
+        if (value < 0) throw new Error('Age must be a positive number');
+      },
+    },
+    password: {
+      type: String,
+      require: true,
+      trim: true,
+      minlength: 7,
+      validate(value) {
+        if (value.toLowerCase().includes('password'))
+          throw new Error('Password can not contain "password"');
+      },
+    },
+    tokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
